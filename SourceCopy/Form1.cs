@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using System.Configuration;
 
 namespace SourceCopy
 {
@@ -21,9 +15,9 @@ namespace SourceCopy
         {
             base.OnLoad(e);
 
-            textBox1.Text = @"D:\SCP\Work";
-            textBox2.Text = @"D:\SCP\Merge";
-            textBox3.Text = @"D:\SCP\copylist.txt";
+            textBox1.Text = ConfigurationManager.AppSettings["base_path"];
+            textBox2.Text = ConfigurationManager.AppSettings["target_path"];
+            textBox3.Text = ConfigurationManager.AppSettings["source_file"];
 
             button1.Click += (sender, agrs) =>
             {
@@ -54,52 +48,73 @@ namespace SourceCopy
             };
             button4.Click += (sender, args) =>
             {
-                String filepath = textBox3.Text;
-                FileInfo info = new FileInfo(filepath);
+                var filepath = textBox3.Text;
+                if (String.IsNullOrWhiteSpace(textBox1.Text))
+                {
+                    MessageBox.Show("The source folder is not set: Error Code-0003");
+                    return;
+                }
+                if (String.IsNullOrWhiteSpace(textBox2.Text))
+                {
+                    MessageBox.Show("The destiny folder is not set: Error Code-0003");
+                    return;
+                }
+                if (String.IsNullOrWhiteSpace(filepath))
+                {
+                    MessageBox.Show("The copy list file is not set: Error Code-0001");
+                    return;
+                }
+                var info = new FileInfo(filepath);
                 if (!info.Exists)
                 {
-                    MessageBox.Show("not list");
+                    MessageBox.Show("The copy list file is not exists: Error Code-0002");
                     return;
                 }
                 if (!Directory.Exists(textBox1.Text))
                 {
-                    MessageBox.Show("not directory");
+                    MessageBox.Show("The source folder is not exists: Error Code-0004");
                     return;
                 }
-                using (FileStream stream = info.OpenRead())
+                try
                 {
-                    using (StreamReader reader = new StreamReader(stream))
+                    using (var stream = info.OpenRead())
                     {
-                        while (!reader.EndOfStream)
+                        using (var reader = new StreamReader(stream))
                         {
-                            String str = reader.ReadLine().Trim();
-                            if (String.IsNullOrEmpty(str.Trim())) {
-                                continue;
-                            }
-                            String des = str.Replace(textBox1.Text, textBox2.Text);
-                            FileInfo co = new FileInfo(des);
-                            if (!co.Directory.Exists)
+                            while (!reader.EndOfStream)
                             {
-                                co.Directory.Create();
+                                var str = reader.ReadLine().Trim();
+                                if (String.IsNullOrEmpty(str.Trim()))
+                                {
+                                    continue;
+                                }
+                                var des = str.Replace(textBox1.Text, textBox2.Text);
+                                var co = new FileInfo(des);
+                                if (!co.Directory.Exists)
+                                {
+                                    co.Directory.Create();
+                                }
+                                var aa = new FileInfo(str);
+                                if (!aa.Exists)
+                                {
+                                    throw new Exception("file nothings : Error Code - 005");
+                                }
+                                try
+                                {
+                                    aa.CopyTo(co.FullName, true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    throw ex;
+                                }
                             }
-
-                            FileInfo aa = new FileInfo(str);
-                            if (!aa.Exists)
-                            {
-                                throw new Exception("file nothings");
-                            }
-                            try
-                            {
-                                aa.CopyTo(co.FullName, true);
-                            }catch(Exception ex)
-                            {
-                                MessageBox.Show(ex.ToString());
-                            }
-                        
-                            //File.Copy(str, des, true);
+                            MessageBox.Show("complete");
                         }
-                        MessageBox.Show("complete");
                     }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
                 }
             };
         }
