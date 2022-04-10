@@ -88,6 +88,10 @@ namespace SourceCopy
                                 {
                                     continue;
                                 }
+                                if (str.StartsWith("file://"))
+                                {
+                                    str = str.Substring(7);
+                                }
                                 var des = str.Replace(textBox1.Text, textBox2.Text);
                                 var co = new FileInfo(des);
                                 if (!co.Directory.Exists)
